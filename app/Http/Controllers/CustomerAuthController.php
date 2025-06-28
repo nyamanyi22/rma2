@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Laravel\Sanctum\HasApiTokens;
 
 class CustomerAuthController extends Controller
 {
@@ -130,30 +131,36 @@ class CustomerAuthController extends Controller
     /**
      * Handle customer login.
      */
-    public function login(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+    
+public function login(Request $request)
+{
+   
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation Failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
 
-        $credentials = $request->only('email', 'password');
-        $customer = Customer::where('email', $credentials['email'])->first();
-
-        if (!$customer || !Hash::check($credentials['password'], $customer->password)) {
-            return response()->json(['message' => 'Invalid email or password'], 401);
-        }
-
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Login successful',
-            'customer' => $customer->makeHidden('password')
-        ], 200);
+            'message' => 'Validation Failed',
+            'errors' => $validator->errors()
+        ], 422);
     }
-}
+
+    $credentials = $request->only('email', 'password');
+    $customer = Customer::where('email', $credentials['email'])->first();
+
+    if (!$customer || !Hash::check($credentials['password'], $customer->password)) {
+        return response()->json(['message' => 'Invalid email or password'], 401);
+    }
+
+    $token = $customer->createToken('customer-token')->plainTextToken;
+
+   
+     return response()->json([
+        'message' => 'Login successful',
+        'customer' => $customer->makeHidden('password'),
+        'token' => $token
+    ]);
+}}
