@@ -5,6 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\RmaRequestController;
 
+use App\Http\Controllers\AdminCustomerController;// admin api
+// Admin routes
+Route::middleware('auth:sanctum')->post('/admin/customers', [AdminCustomerController::class, 'store']);
+
 // Public routes (no auth required)
 Route::post('/register', [CustomerAuthController::class, 'register']);
 Route::post('/login', [CustomerAuthController::class, 'login']);

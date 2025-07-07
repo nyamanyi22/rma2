@@ -56,6 +56,7 @@ class RmaRequestController extends Controller
     /**
      * List all RMA requests for the logged-in customer.
      */
+    
     public function index(Request $request)
     {
         try {
@@ -71,5 +72,7 @@ class RmaRequestController extends Controller
                 'message' => 'Could not fetch RMA requests: ' . $e->getMessage()
             ], 500);
         }
+        
     }
+    
 }
