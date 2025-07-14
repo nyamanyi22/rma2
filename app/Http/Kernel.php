@@ -13,6 +13,7 @@ class Kernel extends HttpKernel
         \Illuminate\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        
     ];
 
     protected $middlewareGroups = [
@@ -43,5 +44,8 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'ensure.admin' => \App\Http\Middleware\EnsureAdmin::class,
+        'ensure.customer' => \App\Http\Middleware\EnsureCustomer::class,
+
     ];
 }

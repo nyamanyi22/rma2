@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminAuthController extends Controller
 {
-    public function login(Request $request)
-    {
+
+public function login(Request $request)
+{
+    try {
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -21,9 +23,9 @@ class AdminAuthController extends Controller
         $admin = Admin::where('email', $credentials['email'])->first();
 
         if (!$admin || !Hash::check($credentials['password'], $admin->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid credentials.'],
-            ]);
+            return response()->json([
+                'message' => 'Invalid credentials.',
+            ], 401);
         }
 
         $token = $admin->createToken('admin_token')->plainTextToken;
@@ -33,7 +35,14 @@ class AdminAuthController extends Controller
             'admin' => $admin,
             'token' => $token,
         ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Server error',
+            'error' => $e->getMessage(), // <== this will tell us the cause!
+        ], 500);
     }
+}
+
 
     public function logout(Request $request)
     {
@@ -43,8 +52,9 @@ class AdminAuthController extends Controller
     }
 
     public function me(Request $request)
-    {
-        return response()->json($request->user());
-    }
+{
+    dd($request->user()); // This will dump the authenticated admin user
+    return response()->json($request->user());
+}
 }
 
