@@ -55,7 +55,7 @@ class CustomerAuthController extends Controller
 
         // Conditional validation for billing address
         $validator->sometimes([
-            'billingAddress1', 
+            'billingAddress1',
             'billingCity',
             'billingState',
             'billingZipcode',
@@ -73,7 +73,7 @@ class CustomerAuthController extends Controller
         }
 
         // Determine if billing address is different
-        $isBillingDifferent = $request->boolean('isBillingAddressDifferent') 
+        $isBillingDifferent = $request->boolean('isBillingAddressDifferent')
                            ?? $request->boolean('is_billing_address_different')
                            ?? false;
 
@@ -88,7 +88,7 @@ class CustomerAuthController extends Controller
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
             'fax' => $request->fax,
-            
+
             // Shipping Address
             'shipping_address1' => $request->shipping_address1 ?? $request->shippingAddress1,
             'shipping_address2' => $request->shipping_address2 ?? $request->shippingAddress2,
@@ -96,10 +96,10 @@ class CustomerAuthController extends Controller
             'shipping_state' => $request->shipping_state ?? $request->shippingState,
             'shipping_zipcode' => $request->shipping_zipcode ?? $request->shippingZipcode,
             'shipping_country' => $request->shipping_country ?? $request->shippingCountry,
-            
+
             // Billing Address (copy from shipping if not different)
             'is_billing_address_different' => $isBillingDifferent,
-            'billing_address1' => $isBillingDifferent 
+            'billing_address1' => $isBillingDifferent
                 ? ($request->billingAddress1 ?? $request->billing_address1)
                 : ($request->shipping_address1 ?? $request->shippingAddress1),
             'billing_address2' => $isBillingDifferent
@@ -117,7 +117,7 @@ class CustomerAuthController extends Controller
             'billing_country' => $isBillingDifferent
                 ? ($request->billingCountry ?? $request->billing_country)
                 : ($request->shipping_country ?? $request->shippingCountry),
-            
+
             'verification_key' => $request->verification_key ?? $request->verificationKey,
         ]);
 
@@ -131,10 +131,10 @@ class CustomerAuthController extends Controller
     /**
      * Handle customer login.
      */
-    
+
 public function login(Request $request)
 {
-   
+
 
     $validator = Validator::make($request->all(), [
         'email' => 'required|email',
@@ -157,7 +157,7 @@ public function login(Request $request)
 
     $token = $customer->createToken('customer-token')->plainTextToken;
 
-   
+
      return response()->json([
         'message' => 'Login successful',
         'customer' => $customer->makeHidden('password'),

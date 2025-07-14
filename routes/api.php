@@ -1,35 +1,39 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\RmaRequestController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\AdminCustomerController;
+use App\Http\Controllers\Admin\AdminAuthController;
 
-use App\Http\Controllers\AdminCustomerController;// admin api
-// Admin routes
-Route::middleware('auth:sanctum')->post('/admin/customers', [AdminCustomerController::class, 'store']);
-
-// Public routes (no auth required)
+// ----------------------
+// Public Routes
+// ----------------------
 Route::post('/register', [CustomerAuthController::class, 'register']);
 Route::post('/login', [CustomerAuthController::class, 'login']);
+Route::post('/admin/login', [AdminAuthController::class, 'login']); // ✅ Admin Login
 
-// Protected routes (auth via Sanctum)
+// ----------------------
+// Customer Auth Routes
+// ----------------------
 Route::middleware('auth:sanctum')->group(function () {
-    // RMA Routes
     Route::post('/rma', [RmaRequestController::class, 'store']);
     Route::get('/rmas', [RmaRequestController::class, 'index']);
 
-    // User Info
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/user', fn(Request $request) => $request->user());
 
-    Route::get('/profile', function (Request $request) {
-        return response()->json([
-            'message' => 'Welcome back!',
-            'user' => $request->user(),
-        ]);
-    });
-
-    // Add more protected routes here...
+    Route::get('/profile', fn(Request $request) => response()->json([
+        'message' => 'Welcome back!',
+        'user' => $request->user(),
+    ]));
 });
+
+// ----------------------
+// Admin Auth Routes
+// ----------------------
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::post('/customers', [AdminCustomerController::class, 'store']);
+    Route::apiResource('products', ProductController::class);
+});
+
