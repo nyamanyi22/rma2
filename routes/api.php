@@ -38,7 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
 // ----------------------
 // Admin Authenticated Routes
 // ----------------------
-Route::prefix('admin')->middleware(['auth:sanctum', 'ensure.admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
+
     // Authenticated admin user
     Route::get('/me', [AdminAuthController::class, 'me']);
 

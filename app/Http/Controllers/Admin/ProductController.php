@@ -12,20 +12,24 @@ class ProductController extends Controller
     {
         return Product::all();
     }
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'code' => 'required|string|unique:products,code',
+        'name' => 'required|string',
+        'brand' => 'nullable|string',
+        'category' => 'nullable|string',
+        'stock' => 'nullable|integer',
+    ]);
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'code' => 'required|unique:products',
-            'name' => 'required',
-            'brand' => 'required',
-            'category' => 'required',
-            'price' => 'required|numeric',
-            'stock' => 'required|integer',
-        ]);
+    $product = Product::create($validated);
 
-        return Product::create($validated);
-    }
+    return response()->json([
+        'message' => 'Product created successfully.',
+        'product' => $product,
+    ], 201);
+}
+
 
     public function show($id)
     {

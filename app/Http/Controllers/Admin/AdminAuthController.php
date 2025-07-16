@@ -6,55 +6,61 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Admin;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class AdminAuthController extends Controller
 {
-
+    // Admin Login
 public function login(Request $request)
 {
-    try {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
 
-        $admin = Admin::where('email', $credentials['email'])->first();
 
-        if (!$admin || !Hash::check($credentials['password'], $admin->password)) {
-            return response()->json([
-                'message' => 'Invalid credentials.',
-            ], 401);
-        }
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
 
-        $token = $admin->createToken('admin_token')->plainTextToken;
-
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Login successful',
-            'admin' => $admin,
-            'token' => $token,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Server error',
-            'error' => $e->getMessage(), // <== this will tell us the cause!
-        ], 500);
+            'message' => 'Validation Failed',
+            'errors' => $validator->errors()
+        ], 422);
     }
+
+    $credentials = $request->only('email', 'password');
+    $admin = Admin::where('email', $credentials['email'])->first();
+
+    if (!$admin || !Hash::check($credentials['password'], $admin->password)) {
+        return response()->json(['message' => 'Invalid email or password'], 401);
+    }
+
+    $token = $admin->createToken('admin-token')->plainTextToken;
+
+
+     return response()->json([
+        'message' => 'Login successful',
+        'admin' => $admin->makeHidden('password'),
+        'token' => $token
+    ]);
 }
 
 
+    // Logout (delete current token)
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json([
+            'message' => 'Logged out successfully',
+        ]);
     }
 
+    // Get currently logged-in admin
     public function me(Request $request)
-{
-    dd($request->user()); // This will dump the authenticated admin user
-    return response()->json($request->user());
+    {
+        return response()->json([
+            'admin' => $request->user()
+        ]);
+    }
 }
-}
-

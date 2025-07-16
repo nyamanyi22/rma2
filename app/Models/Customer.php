@@ -38,4 +38,14 @@ class Customer extends Authenticatable
     protected $hidden = [
         'password',
     ];
+    protected function casts(): array
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 }
+
+}
+
+config(['auth.defaults.passwords' => 'customers']);
