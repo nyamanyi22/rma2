@@ -48,4 +48,3 @@ class Customer extends Authenticatable
 
 }
 
-config(['auth.defaults.passwords' => 'customers']);
