@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // ----------------------
 // Admin Authenticated Routes
 // ----------------------
-Route::prefix('admin')->middleware('auth:sanctum', )->group(function () {
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // All routes within this group require a valid Sanctum API token.
     // You can add further authorization (roles/permissions) within your controllers
     // or by adding a custom middleware like 'ensure.admin' here if it checks roles.
