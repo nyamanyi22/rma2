@@ -32,8 +32,8 @@ class AdminCustomersController extends Controller
                 $q->where('first_name', 'like', '%' . $search . '%')
                   ->orWhere('last_name', 'like', '%' . $search . '%')
                   ->orWhere('email', 'like', '%' . $search . '%')
-                  ->orWhere('company_name', 'like', '%' . $search . '%')
-                  ->orWhere('account_no', 'like', '%' . $search . '%');
+                  ->orWhere('company_name', 'like', '%' . $search . '%');
+                  //->orWhere('account_no', 'like', '%' . $search . '%');
             });
         }
 

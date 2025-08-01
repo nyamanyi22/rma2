@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 });
+ Route::post('/logout', [CustomerAuthController::class, 'logout']);
 
 // ----------------------
 // Admin Authenticated Routes
