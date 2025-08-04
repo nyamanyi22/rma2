@@ -52,5 +52,10 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
         Route::apiResource('customers', AdminCustomersController::class);
         Route::apiResource('products', ProductController::class);
        // Route::apiResource('rmas', RmaController::class);
+        Route::get('/admin/rmas', [AdminRmaController::class, 'index']); // for fetchRmas
+    Route::patch('/admin/rmas/{id}/status', [AdminRmaController::class, 'updateStatus']); // for updateRmaStatus
+    Route::post('/admin/rmas/bulk-update-status', [AdminRmaController::class, 'bulkUpdateStatus']);
+Route::get('/admin/rmas/export', [AdminRmaController::class, 'export']);
+
     // });
 });
