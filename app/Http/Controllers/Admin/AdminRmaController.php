@@ -5,36 +5,28 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RmaRequest;
+use App\Enums\RmaStatus;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Database\Eloquent\Builder;
 
 class AdminRmaController extends Controller
 {
+    private array $validStatuses;
+
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum');
+        $this->validStatuses = RmaStatus::values();
+    }
+
     public function index(Request $request)
     {
-        $query = RmaRequest::query();
+        $query = $this->applyFilters(RmaRequest::with('customer'), $request);
+        $perPage = $request->input('limit', 20);
+        $rmas = $query->latest()->paginate($perPage);
 
-        if ($request->filled('search')) {
-            $query->where('reference_number', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('startDate')) {
-            $query->whereDate('created_at', '>=', $request->startDate);
-        }
-
-        if ($request->filled('endDate')) {
-            $query->whereDate('created_at', '<=', $request->endDate);
-        }
-
-        if ($request->filled('returnReason')) {
-            $query->where('return_reason', $request->returnReason);
-        }
-
-        return response()->json($query->orderBy('created_at', 'desc')->paginate(20));
+        return response()->json($rmas);
     }
 
     public function show($id)
@@ -46,7 +38,7 @@ class AdminRmaController extends Controller
     public function updateStatus($id, Request $request)
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['Pending', 'Approved', 'Rejected', 'Processing', 'Closed'])]
+            'status' => ['required', Rule::in($this->validStatuses)],
         ]);
 
         $rma = RmaRequest::findOrFail($id);
@@ -58,13 +50,13 @@ class AdminRmaController extends Controller
 
     public function bulkUpdateStatus(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'ids' => 'required|array',
-            'status' => 'required|string|in:Pending,Approved,Rejected,Processing,Completed',
+            'status' => ['required', Rule::in($this->validStatuses)],
         ]);
 
-        $updated = RmaRequest::whereIn('id', $request->ids)
-            ->update(['status' => $request->status]);
+        $updated = RmaRequest::whereIn('id', $validated['ids'])
+            ->update(['status' => $validated['status']]);
 
         return response()->json([
             'message' => "Updated $updated RMA(s) successfully.",
@@ -73,27 +65,7 @@ class AdminRmaController extends Controller
 
     public function export(Request $request)
     {
-        $query = RmaRequest::with('customer');
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereHas('customer', fn($q) => $q->where('name', 'like', '%' . $request->search . '%'))
-                  ->orWhere('reference_number', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        if ($request->filled('startDate')) {
-            $query->whereDate('created_at', '>=', $request->startDate);
-        }
-
-        if ($request->filled('endDate')) {
-            $query->whereDate('created_at', '<=', $request->endDate);
-        }
-
+        $query = $this->applyFilters(RmaRequest::with('customer'), $request);
         $rmas = $query->latest()->get();
 
         $headers = [
@@ -120,5 +92,34 @@ class AdminRmaController extends Controller
         };
 
         return Response::stream($callback, 200, $headers);
+    }
+
+    private function applyFilters(Builder $query, Request $request): Builder
+    {
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('customer', fn ($q) => $q->where('name', 'like', "%$search%"))
+                  ->orWhere('reference_number', 'like', "%$search%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('startDate')) {
+            $query->whereDate('created_at', '>=', $request->input('startDate'));
+        }
+
+        if ($request->filled('endDate')) {
+            $query->whereDate('created_at', '<=', $request->input('endDate'));
+        }
+
+        if ($request->filled('returnReason')) {
+            $query->where('return_reason', $request->input('returnReason'));
+        }
+
+        return $query;
     }
 }

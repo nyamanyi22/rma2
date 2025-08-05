@@ -6,7 +6,8 @@ use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\RmaRequestController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminCustomersController;
-use App\Http\Controllers\Admin\AdminAuthController; // Ensure this is imported
+use App\Http\Controllers\Admin\AdminAuthController; 
+use App\Http\Controllers\Admin\AdminRmaController;
 
 // ----------------------
 // Public Routes
@@ -52,10 +53,11 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
         Route::apiResource('customers', AdminCustomersController::class);
         Route::apiResource('products', ProductController::class);
        // Route::apiResource('rmas', RmaController::class);
-        Route::get('/admin/rmas', [AdminRmaController::class, 'index']); // for fetchRmas
-    Route::patch('/admin/rmas/{id}/status', [AdminRmaController::class, 'updateStatus']); // for updateRmaStatus
-    Route::post('/admin/rmas/bulk-update-status', [AdminRmaController::class, 'bulkUpdateStatus']);
-Route::get('/admin/rmas/export', [AdminRmaController::class, 'export']);
+            Route::get('/rmas', [AdminRmaController::class, 'index']);
+    Route::get('/rmas/export', [AdminRmaController::class, 'export']);
+    Route::get('/rmas/{id}', [AdminRmaController::class, 'show']);
+    Route::put('/rmas/{id}/status', [AdminRmaController::class, 'updateStatus']);
+    Route::post('/rmas/bulk-status-update', [AdminRmaController::class, 'bulkUpdateStatus']);
 
     // });
 });
