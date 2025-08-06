@@ -58,6 +58,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/rmas/{id}', [AdminRmaController::class, 'show']);
     Route::put('/rmas/{id}/status', [AdminRmaController::class, 'updateStatus']);
     Route::post('/rmas/bulk-status-update', [AdminRmaController::class, 'bulkUpdateStatus']);
+Route::put('/rmas/{id}', [AdminRmaController::class, 'update']);   // PUT /api/admin/rmas/{id}
+Route::delete('/rmas/{id}', [AdminRmaController::class, 'destroy']); // DELETE /api/admin/rmas/{id}
 
     // });
 });

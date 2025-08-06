@@ -17,25 +17,32 @@ class AdminRmaController extends Controller
     public function __construct()
     {
         $this->middleware('auth:sanctum');
-        $this->validStatuses = RmaStatus::values();
+        $this->validStatuses = array_column(RmaStatus::cases(), 'value');
     }
 
+    /**
+     * GET /api/admin/rmas
+     * Fetch paginated, filtered list of RMA requests.
+     */
     public function index(Request $request)
     {
-        $query = $this->applyFilters(RmaRequest::with('customer'), $request);
-        $perPage = $request->input('limit', 20);
-        $rmas = $query->latest()->paginate($perPage);
+        $limit = $request->input('limit', 20);
+
+        $query = RmaRequest::with('customer')->latest();
+
+        // Apply filters
+        $this->applyFilters($query, $request);
+
+        $rmas = $query->paginate($limit);
 
         return response()->json($rmas);
     }
 
-    public function show($id)
-    {
-        $rma = RmaRequest::with('customer')->findOrFail($id);
-        return response()->json($rma);
-    }
-
-    public function updateStatus($id, Request $request)
+    /**
+     * PATCH /api/admin/rmas/{id}/status
+     * Update single RMA status.
+     */
+    public function updateStatus(Request $request, $id)
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in($this->validStatuses)],
@@ -45,28 +52,36 @@ class AdminRmaController extends Controller
         $rma->status = $validated['status'];
         $rma->save();
 
-        return response()->json(['message' => 'RMA status updated successfully.']);
+        return response()->json(['message' => 'Status updated successfully']);
     }
 
+    /**
+     * POST /api/admin/rmas/bulk-update-status
+     * Bulk update multiple RMAs' statuses.
+     */
     public function bulkUpdateStatus(Request $request)
     {
         $validated = $request->validate([
-            'ids' => 'required|array',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:rma_requests,id',
             'status' => ['required', Rule::in($this->validStatuses)],
         ]);
 
-        $updated = RmaRequest::whereIn('id', $validated['ids'])
+        RmaRequest::whereIn('id', $validated['ids'])
             ->update(['status' => $validated['status']]);
 
-        return response()->json([
-            'message' => "Updated $updated RMA(s) successfully.",
-        ]);
+        return response()->json(['message' => 'Statuses updated successfully']);
     }
 
+    /**
+     * GET /api/admin/rmas/export
+     * Export filtered RMAs as CSV
+     */
     public function export(Request $request)
     {
-        $query = $this->applyFilters(RmaRequest::with('customer'), $request);
-        $rmas = $query->latest()->get();
+        $query = RmaRequest::with('customer')->latest();
+        $this->applyFilters($query, $request);
+        $rmas = $query->get();
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -75,13 +90,13 @@ class AdminRmaController extends Controller
 
         $callback = function () use ($rmas) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Customer', 'Reference No', 'Status', 'Reason', 'Created At']);
+            fputcsv($handle, ['ID', 'Reference Number', 'Customer', 'Status', 'Return Reason', 'Created At']);
 
             foreach ($rmas as $rma) {
                 fputcsv($handle, [
                     $rma->id,
-                    $rma->customer->name ?? 'N/A',
                     $rma->reference_number,
+                    $rma->customer->name ?? 'N/A',
                     $rma->status,
                     $rma->return_reason,
                     $rma->created_at->toDateTimeString(),
@@ -94,32 +109,25 @@ class AdminRmaController extends Controller
         return Response::stream($callback, 200, $headers);
     }
 
-    private function applyFilters(Builder $query, Request $request): Builder
+    /**
+     * Private: Applies filters to the query.
+     */
+    private function applyFilters(Builder $query, Request $request): void
     {
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('customer', fn ($q) => $q->where('name', 'like', "%$search%"))
-                  ->orWhere('reference_number', 'like', "%$search%");
-            });
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('startDate')) {
-            $query->whereDate('created_at', '>=', $request->input('startDate'));
-        }
-
-        if ($request->filled('endDate')) {
-            $query->whereDate('created_at', '<=', $request->input('endDate'));
-        }
-
-        if ($request->filled('returnReason')) {
-            $query->where('return_reason', $request->input('returnReason'));
-        }
-
-        return $query;
+        $query
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->input('search');
+                $q->where(function ($q2) use ($search) {
+                    $q2->whereHas('customer', fn($sub) => $sub->where('name', 'like', "%$search%"))
+                       ->orWhere('reference_number', 'like', "%$search%");
+                });
+            })
+            ->when(
+                $request->filled('status') && in_array($request->status, $this->validStatuses),
+                fn($q) => $q->where('status', $request->status)
+            )
+            ->when($request->filled('startDate'), fn($q) => $q->whereDate('created_at', '>=', $request->startDate))
+            ->when($request->filled('endDate'), fn($q) => $q->whereDate('created_at', '<=', $request->endDate))
+            ->when($request->filled('returnReason'), fn($q) => $q->where('return_reason', $request->returnReason));
     }
 }
