@@ -130,4 +130,73 @@ class AdminRmaController extends Controller
             ->when($request->filled('endDate'), fn($q) => $q->whereDate('created_at', '<=', $request->endDate))
             ->when($request->filled('returnReason'), fn($q) => $q->where('return_reason', $request->returnReason));
     }
+    public function destroy($id)
+{
+    $rma = RmaRequest::find($id);
+
+    if (!$rma) {
+        return response()->json(['message' => 'RMA not found.'], 404);
+    }
+
+    $rma->delete();
+
+    return response()->json(['message' => 'RMA deleted successfully.']);
+}
+public function update(Request $request, $id)
+{
+    $rma = RmaRequest::find($id);
+
+    if (!$rma) {
+        return response()->json(['message' => 'RMA not found.'], 404);
+    }
+
+ $validated = $request->validate([
+    'customer_id' => 'exists:customers,id',
+    'product_code' => 'string|required',
+    'description' => 'string|nullable',
+    'serial_number' => 'string|required',
+    'quantity' => 'integer|min:1|required',
+    'invoice_date' => 'date|required',
+    'sales_document_no' => 'string|required',
+    'return_reason' => 'string|required',
+    'problem_description' => 'string|required',
+    'photo_path' => 'string|nullable',
+    'status' => ['string', Rule::in(RmaStatus::values())],
+]);
+
+
+    $rma->update($validated);
+
+    return response()->json([
+        'message' => 'RMA updated successfully.',
+        'rma' => $rma,
+    ]);
+}
+public function show($id)
+{
+    $rma = RmaRequest::with('customer')->find($id);
+
+    if (!$rma) {
+        return response()->json(['message' => 'RMA not found.'], 404);
+    }
+
+    return response()->json([
+        'rma' => $rma,
+    ]);
+}
+
+public function getStatuses()
+{
+    $statuses = array_map(function($value) {
+        return [
+            'value' => $value,
+            'label' => RmaStatus::labels()[$value] ?? $value,
+        ];
+    }, RmaStatus::values());
+
+    return response()->json([
+        'statuses' => $statuses
+    ]);
+}
+
 }
