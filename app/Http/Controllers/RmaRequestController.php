@@ -48,7 +48,7 @@ class RmaRequestController extends Controller
         // 4. Return a JSON response to the client
         return response()->json([
             'success' => true,
-            'rmaNumber' => 'RMA-' . str_pad($rma->id, 6, '0', STR_PAD_LEFT),
+            'rmaNumber' => $rma->rma_number,
             'productCode' => $rma->product_code,
             'serialNumber' => $rma->serial_number,
             'returnReason' => $rma->return_reason,

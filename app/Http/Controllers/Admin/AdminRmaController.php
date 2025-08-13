@@ -28,7 +28,7 @@ class AdminRmaController extends Controller
     {
         $limit = $request->input('limit', 20);
 
-        $query = RmaRequest::with('customer')->latest();
+        $query = RmaRequest::with('customer', 'product')->latest();
 
         // Apply filters
         $this->applyFilters($query, $request);
@@ -90,12 +90,12 @@ class AdminRmaController extends Controller
 
         $callback = function () use ($rmas) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Reference Number', 'Customer', 'Status', 'Return Reason', 'Created At']);
+            fputcsv($handle, ['ID', 'RMA Number', 'Customer', 'Status', 'Return Reason', 'Created At']);
 
             foreach ($rmas as $rma) {
                 fputcsv($handle, [
                     $rma->id,
-                    $rma->reference_number,
+                    $rma->rma_number,
                     $rma->customer->name ?? 'N/A',
                     $rma->status,
                     $rma->return_reason,
@@ -119,7 +119,7 @@ class AdminRmaController extends Controller
                 $search = $request->input('search');
                 $q->where(function ($q2) use ($search) {
                     $q2->whereHas('customer', fn($sub) => $sub->where('name', 'like', "%$search%"))
-                       ->orWhere('reference_number', 'like', "%$search%");
+                       ->orWhere('rma_number', 'like', "%$search%");
                 });
             })
             ->when(

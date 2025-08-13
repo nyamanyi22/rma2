@@ -13,6 +13,7 @@ return new class extends Migration
 {
     Schema::create('rma_requests', function (Blueprint $table) {
         $table->id();
+          $table->string('rma_number')->unique(); 
         $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
         $table->string('product_code');
         $table->string('description')->nullable();

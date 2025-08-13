@@ -6,7 +6,7 @@ use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\RmaRequestController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminCustomersController;
-use App\Http\Controllers\Admin\AdminAuthController; 
+use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminRmaController;
 
 // ----------------------
@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminRmaController;
 // ----------------------
 Route::post('/register', [CustomerAuthController::class, 'register']);
 Route::post('/login', [CustomerAuthController::class, 'login']);
+Route::post('/logout', [CustomerAuthController::class, 'logout']);
 
 // ----------------------
 // Admin Public Routes (e.g., login)
@@ -35,33 +36,30 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 });
- Route::post('/logout', [CustomerAuthController::class, 'logout']);
 
 // ----------------------
 // Admin Authenticated Routes
 // ----------------------
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
-    // All routes within this group require a valid Sanctum API token.
-    // You can add further authorization (roles/permissions) within your controllers
-    // or by adding a custom middleware like 'ensure.admin' here if it checks roles.
+    // All routes in this group have the '/admin' prefix and 'auth:sanctum' middleware
+    Route::get('/me', [AdminAuthController::class, 'me']);
+    Route::post('/logout', [AdminAuthController::class, 'logout']);
 
-    // Example with 'ensure.admin' if it's a separate role check:
-    // Route::middleware('ensure.admin')->group(function () {
-        Route::get('/me', [AdminAuthController::class, 'me']);
-        Route::post('/logout', [AdminAuthController::class, 'logout']);
+    Route::apiResource('customers', AdminCustomersController::class);
+    Route::apiResource('products', ProductController::class);
 
-        Route::apiResource('customers', AdminCustomersController::class);
-        Route::apiResource('products', ProductController::class);
-       // Route::apiResource('rmas', RmaController::class);
-            Route::get('/rmas', [AdminRmaController::class, 'index']);
+    // Explicitly defining RMA routes
+    Route::get('/rmas', [AdminRmaController::class, 'index']);
     Route::get('/rmas/export', [AdminRmaController::class, 'export']);
     Route::get('/rmas/{id}', [AdminRmaController::class, 'show']);
     Route::put('/rmas/{id}/status', [AdminRmaController::class, 'updateStatus']);
     Route::post('/rmas/bulk-status-update', [AdminRmaController::class, 'bulkUpdateStatus']);
-Route::put('/rmas/{id}', [AdminRmaController::class, 'update']);   // PUT /api/admin/rmas/{id}
-Route::delete('/rmas/{id}', [AdminRmaController::class, 'destroy']); // DELETE /api/admin/rmas/{id}
-    Route::middleware('auth:sanctum')->get('/rma-statuses', [AdminRmaController::class, 'getStatuses']);
-
-
-    // });
+    Route::put('/rmas/{id}', [AdminRmaController::class, 'update']);
+    Route::delete('/rmas/{id}', [AdminRmaController::class, 'destroy']);
 });
+
+// IMPORTANT: TEMPORARY DEBUGGING ROUTE.
+// The `getStatuses` route is moved outside the authenticated group to check if the
+// authentication middleware is causing the issue. If this works, the problem
+// is with the authentication token.
+Route::get('admin/rma-statuses', [AdminRmaController::class, 'getStatuses']);
