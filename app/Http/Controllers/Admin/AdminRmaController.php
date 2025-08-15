@@ -77,37 +77,48 @@ class AdminRmaController extends Controller
      * GET /api/admin/rmas/export
      * Export filtered RMAs as CSV
      */
-    public function export(Request $request)
-    {
-        $query = RmaRequest::with('customer')->latest();
-        $this->applyFilters($query, $request);
-        $rmas = $query->get();
+public function export(Request $request)
+{
+    $query = RmaRequest::with('customer', 'product')->latest();
+    $this->applyFilters($query, $request);
+    $rmas = $query->get();
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="rmas_export.csv"',
-        ];
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="rmas_export.csv"',
+    ];
 
-        $callback = function () use ($rmas) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'RMA Number', 'Customer', 'Status', 'Return Reason', 'Created At']);
+    $callback = function () use ($rmas) {
+        $handle = fopen('php://output', 'w');
 
-            foreach ($rmas as $rma) {
-                fputcsv($handle, [
-                    $rma->id,
-                    $rma->rma_number,
-                    $rma->customer->name ?? 'N/A',
-                    $rma->status,
-                    $rma->return_reason,
-                    $rma->created_at->toDateTimeString(),
-                ]);
-            }
+        // CSV header
+        fputcsv($handle, ['ID', 'RMA Number', 'Customer', 'Product', 'Status', 'Return Reason', 'Created At']);
 
-            fclose($handle);
-        };
+        foreach ($rmas as $rma) {
+            $customerName = $rma->customer
+                ? trim($rma->customer->first_name . ' ' . ($rma->customer->last_name ?? ''))
+                : 'N/A';
 
-        return Response::stream($callback, 200, $headers);
-    }
+            $productName = $rma->product ? $rma->product->name : 'N/A';
+
+            fputcsv($handle, [
+                $rma->id,
+                $rma->rma_number,
+                $customerName,
+                $productName,
+                $rma->status,
+                $rma->return_reason,
+                $rma->created_at->toDateTimeString(),
+            ]);
+        }
+
+        fclose($handle);
+    };
+
+    return Response::stream($callback, 200, $headers);
+}
+
+
 
     /**
      * Private: Applies filters to the query.

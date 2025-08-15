@@ -16,7 +16,7 @@ return new class extends Migration
           $table->string('rma_number')->unique(); 
         $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
         $table->string('product_code');
-        $table->string('description')->nullable();
+        $table->string('product_name')->nullable();
         $table->string('serial_number');
         $table->integer('quantity')->default(1);
         $table->date('invoice_date');
